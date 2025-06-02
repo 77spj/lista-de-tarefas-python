@@ -1,14 +1,16 @@
-import ttkbootstrap as ttk # Importando a biblioteca ttkbootstrap
-from ttkbootstrap.constants import * # Importando as constantes do ttkbootstrap
-from tkinter import messagebox # Importando a biblioteca messagebox do tkinter
-from tkinter import Listbox # Importando a biblioteca Listbox do tkinter
-from  datetime import datetime # Importando a biblioteca datetime para manipulação de datas e horas
-import json # Importando a biblioteca json para manipulação de arquivos JSON
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import *
+from tkinter import messagebox
+from tkinter import Listbox
+from datetime import datetime
+import json
+import os
 
-# Array com as lista de tarefas
+# Variáveis globais
 tarefas = []
-ARQUIVO_TAREFAS = "tarefas.json" # Nome do arquivo JSON onde as tarefas serão salvas
+ARQUIVO_TAREFAS = "tarefas.json"
 
+# Funções de tarefas
 def salvar_tarefas():
     with open(ARQUIVO_TAREFAS, "w") as f:
         json.dump(tarefas, f)
@@ -17,108 +19,212 @@ def carregar_tarefas():
     global tarefas
     try:
         with open(ARQUIVO_TAREFAS, "r") as f:
-            tarefas = json.load(f)
-    except FileNotFoundError:
+            conteudo = json.load(f)
+            # Garante que o conteúdo é uma lista
+            if isinstance(conteudo, list):
+                tarefas = conteudo
+            else:
+                tarefas = []
+    except (FileNotFoundError, json.JSONDecodeError):
         tarefas = []
 
-# Função para adicionar uma tarefa
 def adicionar_tarefa():
-    texto = entrada.get() # Pegando as tarefas digitadas pelo usuário
+    texto = entrada.get()
     if texto.strip() != "":
-        tarefas.append(texto) # Adicionando a tarefa ao array
-        entrada.delete(0, 'end') # Limpando o campo de entrada
-        atualizar_lista() # Atualizando a lista de tarefas (Nesse caso a lista é atualizada pra incluir a nova tarefa)
-        salvar_tarefas() # Salvando as tarefas no arquivo JSON
+        tarefas.append(texto)
+        entrada.delete(0, 'end')
+        atualizar_lista()
+        salvar_tarefas()
     else:
         messagebox.showerror("Erro", "Digite uma tarefa válida!")
 
-# Função para remover uma tarefa da lista
 def remover_tarefa():
     try:
-        indice = lista.curselection()[0] # Pegando o índice da tarefa selecionada
-        tarefas.pop(indice) # Removendo a tarefa do array
-        atualizar_lista() # Atualizando a lista de tarefas ( Nesse caso a lista é atualizada pra remover a tarefa selecionada)
-        salvar_tarefas() # Salvando as alterações de tarefas no arquivo JSON
+        indice = lista.curselection()[0]
+        tarefas.pop(indice)
+        atualizar_lista()
+        salvar_tarefas()
     except:
-        messagebox.showerrror("Atenção!", "Selecione uma tarefa para remover!") # Mensagem de erro caso o usuário não selecione uma tarefa
+        messagebox.showerror("Atenção!", "Selecione uma tarefa para remover!")
 
-# Função para atualizar a lista de tarefas
 def atualizar_lista():
-    lista.delete(0, 'end') # Limpando a lista de tarefas
+    lista.delete(0, 'end')
     for i, tarefa in enumerate(tarefas):
-        lista.insert('end', tarefa) 
+        lista.insert('end', tarefa)
         if "[Concluído]" in tarefa:
-            lista.itemconfig(i, foreground="green") # Alterando a cor de fundo da tarefa concluída
+            lista.itemconfig(i, foreground="green")
         else:
-            lista.itemconfig(i, foreground="white") # Alterando a cor de fundo da tarefa não concluída
-
-# Função para marcar uma tarefa como concluída
+            lista.itemconfig(i, foreground="white")
 
 def marcar_concluida():
     try:
-        indice = lista.curselection()[0] # Pegando o índice da tarefa selecionada
-        tarefa = tarefas[indice] # Pegando a tarefa selecionada
+        indice = lista.curselection()[0]
+        tarefa = tarefas[indice]
         if " [Concluído] ✅" not in tarefa:
-            tarefas[indice] = tarefa + " [Concluído] ✅" # Adicionando a tag de concluído
-            atualizar_lista() # Atualizando a lista de tarefas
-            salvar_tarefas() # Salvando as alterações de tarefas no arquivo JSON
+            tarefas[indice] = tarefa + " [Concluído] ✅"
+            atualizar_lista()
+            salvar_tarefas()
         else:
-            messagebox.showinfo("Atenção!", "Essa tarefa já está marcada como concluída!") # Mensagem de erro caso a tarefa já esteja concluída
+            messagebox.showinfo("Atenção!", "Essa tarefa já está marcada como concluída!")
     except:
         messagebox.showerror("Atenção!", "Selecione uma tarefa para marcar como concluída!")
 
-# Função para desmarcar uma tarefa como concluída
 def desmarcar_concluida():
     try:
-        indice = lista.curselection()[0] # Pegando o índice da tarefa selecionada
-        tarefa = tarefas[indice]  # Pegando a tarefa selecionada
+        indice = lista.curselection()[0]
+        tarefa = tarefas[indice]
         if " [Concluído]" in tarefa:
             tarefas[indice] = tarefa.replace(" [Concluído] ✅", "")
             atualizar_lista()
-            salvar_tarefas() # Salvando as alterações de tarefas no arquivo JSON
+            salvar_tarefas()
         else:
-            messagebox.showinfo("Atenção!", "Essa tarefa ainda não foi concluída!") # Mensagem de erro caso a tarefa ainda não esteja concluída
+            messagebox.showinfo("Atenção!", "Essa tarefa ainda não foi concluída!")
     except:
         messagebox.showerror("Atenção!", "Selecione uma tarefa para desmarcar como concluída!")
 
-# Função para exibir a data e hora atual
+# Funções de usuários
+def carregar_usuarios():
+    if not os.path.exists("usuarios.json"):
+        return {}
+    with open("usuarios.json", "r") as arquivo:
+        try:
+            return json.load(arquivo)
+        except json.JSONDecodeError:
+            return {}
+
+def salvar_usuarios(login, senha):
+    usuarios = carregar_usuarios()
+    usuarios[login] = senha
+    with open("usuarios.json", "w") as f:
+        json.dump(usuarios, f)
+
+def criar_conta():
+    login = entrada_novo_login.get()
+    senha = entrada_nova_senha.get()
+    confirmar_senha = entrada_confirmar_senha.get()
+
+    if senha != confirmar_senha:
+        messagebox.showerror("Erro", "Senhas não coincidem!")
+        return
+
+    usuarios = carregar_usuarios()
+    if login in usuarios:
+        messagebox.showerror("Erro", "Usuário já cadastrado!")
+        return
+    salvar_usuarios(login, senha)
+    messagebox.showinfo("Sucesso", "Usuário cadastrado com sucesso!")
+    mostrar_login()
+
+def fazer_login():
+    login = entrada_login.get()
+    senha = entrada_senha.get()
+    usuarios = carregar_usuarios()
+    if login in usuarios and usuarios[login] == senha:
+        messagebox.showinfo("Sucesso", "Login realizado com sucesso!")
+        frame_Login.pack_forget()
+        frame_tarefas.pack(pady=10)
+        entrada_login.delete(0, 'end')
+        entrada_senha.delete(0, 'end')
+    else:
+        messagebox.showerror("Erro", "Usuário ou senha inválidos.")
+
+# Funções de navegação
+def mostrar_login():
+    frame_cadastro.pack_forget()
+    frame_tarefas.pack_forget()
+    frame_Login.pack(pady=50)
+
+def mostra_cadastro():
+    frame_Login.pack_forget()
+    frame_cadastro.pack(pady=30)
+
+# Função para o relógio
 def atualizar_relogio():
-    agora = datetime.now() # Pegando a data e hora atual
-    texto = agora.strftime("Data: %d/%m/%Y \n Hora: %H:%M:%S") # Formatando a data e hora
-    label_relogio.config(text=texto) # Atualizando o texto do label com a data e hora atual
-    label_relogio.after(1000, atualizar_relogio) # atualiza a cada 1000 ms (1 segundo)
+    agora = datetime.now()
+    texto = agora.strftime("Data: %d/%m/%Y \n Hora: %H:%M:%S")
+    label_relogio.config(text=texto)
+    label_relogio.after(1000, atualizar_relogio)
 
-# ------------------- Estilização da janela principal -------------------
+# ---------- INTERFACE GRÁFICA ----------
+app = ttk.Window(title="Lista de Tarefas", themename="darkly", size=(400, 600))
 
-app = ttk.Window(title="Lista de Tarefas", themename="darkly", size=(400, 600)) # Criando a janela principal
+# -------- Tela de Login --------
+frame_Login = ttk.Frame(app)
 
-label_relogio = ttk.Label(app, text="", font=("Arial", 12)) # Criando o label para exibir a data e hora atual
-label_relogio.pack(pady=5) # Adicionando o label na janela
+lbl_login = ttk.Label(frame_Login, text="Login", font=("Arial", 16))
+lbl_login.pack(pady=10)
+entrada_login = ttk.Entry(frame_Login, width=30)
+entrada_login.pack(pady=10)
 
-entrada = ttk.Entry(app, width=40) # Criando o campo de entrada de texto
-entrada.pack(pady=10) # Adicionando o campo de entrada na janela
+lbl_senha = ttk.Label(frame_Login, text="Senha", font=("Arial", 16))
+lbl_senha.pack(pady=10)
+entrada_senha = ttk.Entry(frame_Login, show="*", width=30)
+entrada_senha.pack(pady=10)
 
-botao_adicionar = ttk.Button(app, text="Adicionar tarefa", command=adicionar_tarefa) # Criando o botão de adicionar tarefa
-botao_adicionar.pack(pady=5) # Adicionando o botão de adicionar tarefa na janela
+btn_login = ttk.Button(frame_Login, text="Entrar", command=fazer_login)
+btn_login.pack(pady=10)
 
-botao_remover = ttk.Button(app, text="Remover tarefa", command=remover_tarefa) # Criando o botão de remover tarefa
-botao_remover.pack(pady=5) # Adicionando o botão de remover tarefa na janela
+btn_ir_cadastro = ttk.Button(frame_Login, text="Criar uma conta", command=mostra_cadastro)
+btn_ir_cadastro.pack(pady=10)
 
-botao_atualizar = ttk.Button(app, text="Atualizar lista", command=atualizar_lista) # Criando o botão de atualizar lista
-botao_atualizar.pack(pady=5) # Adicionando o botão de atualizar lista na janela
+# -------- Tela de Cadastro --------
+frame_cadastro = ttk.Frame(app)
 
-lista = Listbox(app, width=40, height=15) # Criando a lista de tarefas
-lista.pack(pady=10) # Adicionando a lista de tarefas na janela
+lbl_novo_login = ttk.Label(frame_cadastro, text="Novo Usuário", font=("Arial", 16))
+lbl_novo_login.pack(pady=10)
+entrada_novo_login = ttk.Entry(frame_cadastro, width=30)
+entrada_novo_login.pack(pady=10)
 
-botao_concluida = ttk.Button(app, text="Marcar como concluída", command=marcar_concluida) # Criando o botão de marcar tarefa como concluída
-botao_concluida.pack(side="left", padx=(35, 5), pady=0) # Adicionando o botão de marcar tarefa como concluída na janela
+lbl_nova_senha = ttk.Label(frame_cadastro, text="Nova Senha", font=("Arial", 16))
+lbl_nova_senha.pack(pady=10)
+entrada_nova_senha = ttk.Entry(frame_cadastro, show="*", width=30)
+entrada_nova_senha.pack(pady=10)
 
-botao_remover_concluidda = ttk.Button(app, text="Desmarcar como concluída", command=desmarcar_concluida) # Criando o botão de desmarcar tarefa como concluída
-botao_remover_concluidda.pack(side="left", padx=(5, 0), pady=0)  # Adicionando o botão de desmarcar tarefa como concluída na janela
+lbl_confirmar_senha = ttk.Label(frame_cadastro, text="Confirmar Senha", font=("Arial", 16))
+lbl_confirmar_senha.pack(pady=10)
+entrada_confirmar_senha = ttk.Entry(frame_cadastro, show="*", width=30)
+entrada_confirmar_senha.pack(pady=10)
 
-atualizar_relogio() # Chamando a função para atualizar o relógio
+btn_criar_conta = ttk.Button(frame_cadastro, text="Criar Conta", command=criar_conta)
+btn_criar_conta.pack(pady=10)
 
-carregar_tarefas()     # <-- Adiciona essa linha
+btn_voltar_login = ttk.Button(frame_cadastro, text="Voltar para Login", command=mostrar_login)
+btn_voltar_login.pack(pady=10)
+
+# -------- Tela de Tarefas --------
+frame_tarefas = ttk.Frame(app)
+
+label_relogio = ttk.Label(frame_tarefas, text="", font=("Arial", 12))
+label_relogio.pack(pady=5)
+
+entrada = ttk.Entry(frame_tarefas, width=40)
+entrada.pack(pady=10)
+
+botao_adicionar = ttk.Button(frame_tarefas, text="Adicionar tarefa", command=adicionar_tarefa)
+botao_adicionar.pack(pady=5)
+
+botao_remover = ttk.Button(frame_tarefas, text="Remover tarefa", command=remover_tarefa)
+botao_remover.pack(pady=5)
+
+botao_atualizar = ttk.Button(frame_tarefas, text="Atualizar lista", command=atualizar_lista)
+botao_atualizar.pack(pady=5)
+
+lista = Listbox(frame_tarefas, width=40, height=15)
+lista.pack(pady=10)
+
+botao_concluida = ttk.Button(frame_tarefas, text="Marcar como concluída", command=marcar_concluida)
+botao_concluida.pack(side="left", padx=(35, 5), pady=5)
+
+botao_remover_concluida = ttk.Button(frame_tarefas, text="Desmarcar como concluída", command=desmarcar_concluida)
+botao_remover_concluida.pack(side="left", padx=(5, 0), pady=5)
+
+btn_logout = ttk.Button(frame_tarefas, text="Sair", command=mostrar_login)
+btn_logout.pack(pady=10)
+
+# Inicialização
+carregar_tarefas()
 atualizar_lista()
+atualizar_relogio()
+mostrar_login()
 
-app.mainloop() # Iniciando o loop da janela principal
+app.mainloop()
